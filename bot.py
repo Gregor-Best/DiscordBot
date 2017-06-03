@@ -5,6 +5,8 @@ import discord
 import json, asyncio
 import logging
 import os
+import sys
+import psutil
 
 try:
     import uvloop
@@ -32,7 +34,7 @@ async def on_ready():
     print('----------')
 
 @bot.command(hidden=True)
-asyncio def load_cog(cog):
+async def load_cog(cog):
     cog_upper = cog[0].upper() + cog[1:]
     try:
         bot.load_extension(cog_id)
@@ -41,6 +43,24 @@ asyncio def load_cog(cog):
     except (ImportError, discord.ClientException) as e:
         await bot.say('Error loading cog {}.'.format(cog_upper))
         return
+
+@bot.command(hidden=True)
+async def restart():
+    await bot.say('Restarting Process.')
+    try:
+        p = psutil.Process(os.getpid())
+        for handler in p.get_open_files() + p.connections():
+            os.close(handler.fd)
+    except Exception as e:
+        logging.error(e)
+
+    python = sys.executable
+    os.execl(python, python, *sys.argv)
+
+@bot.command(hidden=True)
+async def stop():
+    await bot.say('Stopping Process.')
+    quit()
 
 def read_credentials():
     with open('credentials.json') as f:
